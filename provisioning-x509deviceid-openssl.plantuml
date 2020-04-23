@@ -1,0 +1,14 @@
+@startuml
+
+title Internals of the TLS client auth
+
+participant openssl
+participant "openssl-engine-ks"
+participant KS
+
+openssl -> "openssl-engine-ks" ++: openssl::EVP_PKEY_sign(privkey openssl::EVP_PKEY, ...)
+"openssl-engine-ks" -> KS ++: sign("key handle", ...)
+return OK(signature)
+return OK(signature)
+
+@enduml
