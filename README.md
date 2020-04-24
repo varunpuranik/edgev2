@@ -1,6 +1,6 @@
 IoT Edge v2 is made up of several independent services instead of one monolithic `iotedged`
 
-- Edge Identity Service
+- Identity Service
 
     Handles provisioning.
 
@@ -22,8 +22,6 @@ IoT Edge v2 is made up of several independent services instead of one monolithic
 
 Each component talks to the other components over RPC of some sort (TODO: HTTP-over-UDS? gRPC-over-UDS? D-Bus? Something else?)
 
-
-
 # Provisioning
 
 ## X.509 device ID cert
@@ -32,38 +30,43 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
 
 1. User configures KS to use PKCS#11 and preloads the device ID cert's privkey.
 
-    ```yaml
-    pkcs11_lib_path: '/usr/lib/softhsm.so'
-    pkcs11_base_slot: 'pkcs11:slot-id=0?pin-value=1234'
+    ```toml
+    [keystore.pkcs11]
+    "lib_path" = "/usr/lib/softhsm.so"
+    "base_slot" = "pkcs11:slot-id=0?pin-value=1234"
 
-    'preloaded_key:device-id': 'pkcs11:slot-id=0;object=device%20id?pin-value=1234'
+    [keystore.preloaded_key]
+    "device-id" = "pkcs11:slot-id=0;object=device%20id?pin-value=1234"
     ```
 
-1. User configures CS to preload the device ID cert.
+2. User configures CS to preload the device ID cert.
 
-    ```yaml
-    homedir_path: '/var/lib/iotedge/cs'
+    ```toml
+    [certstore]
+    "homedir_path" = "/var/lib/iotedge/cs"
 
-    'preloaded_cert:device-id': '/var/secrets/device-id.cer'
+    [certstore.preloaded_cert]
+    "device-id" = "/var/secrets/device-id.cer"
     ```
 
-1. User configures EIS with provisioning info.
+3. User configures IS with provisioning info.
 
-    ```yaml
-    provisioning:
-      source: 'dps'
-      scope_id: '...'
-      attestation:
-        method: 'x509'
-        # TODO: If we decide certs and keys *must* come from KS and CS, then the URI is redundant and it could directly be the respective IDs.
-        # Otherwise using a URI allows the scheme to determine other options for the source, like file:// for files.
-        identity_cert: 'cert://device-id'
-        identity_pk: 'key://device-id'
+    ```toml
+    # TODO: If we decide certs and keys *must* come from KS and CS, then the URI is redundant and it could directly be the respective IDs.
+    # Otherwise using a URI allows the scheme to determine other options for the source, like file:// for files.
+    [provisioning]
+    "source" = "dps"
+    "scope_id" = "<ADD DPS SCOPE ID HERE>"
+
+    [provisioning.attestation]
+    "method" = "x509"
+    "identity_cert" = "cert://device-id"
+    "identity_pk" = "key://device-id"
     ```
 
-1. User starts KS, CS, EIS.
+4. User starts KS, CS, IS.
 
-1. EIS performs provisioning.
+5. IS performs provisioning.
 
     ![Provisioning using X.509 device ID cert](provisioning-x509deviceid.png)
     ![Internals of the TLS client auth](provisioning-x509deviceid-openssl.png)
@@ -77,18 +80,26 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
 
 1. User configures KS to preload the device CA cert's privkey.
 
-    ```yaml
-    'preloaded_key:device-ca': 'pkcs11:slot-id=0;object=device%20ca?pin-value=1234'
+    ```toml
+    [keystore.preloaded_key]
+    "device-ca" = "pkcs11:slot-id=0;object=device%20ca?pin-value=1234"
+
+    [keystore.pkcs11]
+    "lib_path" = "/usr/lib/softhsm.so"
+    "base_slot" = "pkcs11:slot-id=0?pin-value=1234"
+
     ```
 
-1. User configures CS to preload the device ID cert and trusted CA cert.
+2. User configures CS to preload the device ID certificate and trusted CA cert.
 
-    ```yaml
-    'preloaded_cert:device-ca': '/var/secrets/device-ca.cer'
-    'preloaded_cert:trusted-ca': '/var/secrets/trusted-ca.cer'
+    ```toml
+    [certstore.preloaded_cert]
+    "device-ca" = "/var/secrets/device-ca.cer"
+    "trusted-ca" = "/var/secrets/trusted-ca.cer"
     ```
 
-1. User configures MR.
+
+3. User configures MR.
 
     ```yaml
     certificates:
@@ -118,28 +129,191 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
       uri: 'unix:///var/run/docker.sock'
     ```
 
-1. User configures CS to preload the device ID cert.
+4. User configures CS to preload the device ID cert.
 
-    ```yaml
-    homedir_path: '/var/lib/iotedge/cs'
+    ```toml
+    [certstore]
+    "homedir_path" = "/var/lib/iotedge/cs"
 
-    'preloaded_cert:device-id': '/var/secrets/device-id.cer'
+    [certstore.preloaded_cert]
+    "device-id" = "/var/secrets/device-id.cer"
     ```
 
-1. User starts MR.
+5. User starts MR.
 
-1. MR does its work.
+6. MR does its work.
 
     ![MR operation](operation-mr-deviceca.png)
 
 
 # API surface
 
-## EIS
+## MR
+
+The iotedged REST APIs will preserve their spec, in order to remain backwards-compatible.
+
+
+
+## IS
+
+### Get IoT device provisioning result
+`GET /identities/aziot/device`
+
+#### Response (SAS case)
+```json
+{
+  "id": "aziot://myhub.net/device/device01",
+  "managedBy": "aziot://myhub.net/",
+  "auth": {
+    "type": "sas",
+    "keyStoreHandle": "string",
+  }
+}
+```
+#### Response (X.509 case)
+```json
+{
+  "id": "aziot://myhub.net/device/device01",
+  "managedBy": "aziot://myhub.net/",
+  "auth": {
+    "type": "x509",
+    "certicateStoreHandle": "string",
+  }
+}
+```
+
+### Trigger IoT device reprovisioning flow
+`GET /identities/aziot/device/reprovision`
+
+#### Response
+```
+200 Ok
+```
 
 ## KS
 
+### Create Key
+`PUT /key/{keyid}`
+
+#### Response
+```json
+{
+  "keyStoreHandle": "string"
+}
+```
+
+### Get Key
+`GET /key/{keyid}`
+
+#### Response
+```json
+{
+  "keyStoreHandle": "string"
+}
+```
+
+### Create Key Pair
+`POST /keypair`
+
+#### Request
+```json
+{
+  "keypairid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "keyStoreHandle": "string"
+}
+```
+
+### Load Key Pair
+`GET /keypair/{keypairid}`
+
+#### Response
+```json
+{
+  "keyStoreHandle": "string"
+}
+```
+
+### Sign using Private Key
+`POST /sign`
+
+#### Request
+```json
+{
+  "keyStoreHandle": "string",
+  "signAlgorithm": "ECDSA/RSA_PKCS1/RSA_PSS",
+  "hashAlgorithm": "SHA1/SHA224/SHA256/SHA384/SHA512",
+  "signParameters": 
+  {
+      "maskGenerationFunction": "SHA1/SHA224/SHA256/SHA384/SHA512",
+      "saltLength": 20
+  },
+  "digest": "string"
+}
+```
+
+#### Response
+```json
+{
+  "signature": "string"
+}
+```
+
+
+
 ## CS
 
-## MR
+### Create or Import Certificate
+`PUT /certificate/{certid}`
+
+#### Request to create certificate
+```json
+{
+  "issuername": "string",
+  "csr": "base64-encoded-string"
+}
+```
+
+#### Request to import certificate
+```json
+{
+  "pem": "string"
+}
+```
+
+#### Response
+```json
+{
+  "pem": "string"
+}
+```
+
+### Load Certificate
+`GET /certificate/{certid}`
+
+#### Response
+```json
+{
+  "pem": "string"
+}
+```
+
+### Get Certificate List
+`GET /certificate`
+
+#### Response
+```json
+{
+  "certificates": [
+    {
+        "pem": "string"
+    }
+  ]
+}
+```
 
