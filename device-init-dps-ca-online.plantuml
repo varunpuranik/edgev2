@@ -1,0 +1,66 @@
+@startuml
+participant "Operator" as oem
+participant "IoT Hub" as ih
+entity "Edge device" as device
+participant "DPS" as dps
+
+box "Device" #LightBlue 
+participant "IoT Edge\nruntime" as ie
+participant "EdgeAgent" as ea
+participant "EdgeHub" as eh
+participant "Custom\nModule" as cm
+end box 
+
+autonumber 
+
+group Initial Setup 
+oem->dps : Register signing CA Cert (CA1)\nfor signing certificates
+oem->oem : Generate device identity cert (DIdC) signed by\nIdentity CA Cert (CA2).
+note over oem: CA1 and CA2 can be same or different in this case\nbecause device does not have the CA cert
+oem->dps : Create group enrollment with Idenity CA Certificate (CA2) 
+oem->device : Install DIdC on the device (file system or HSM) 
+end
+
+group Device setup and configuration
+oem->ie : Configure device to sign certificates using DPS as a CA
+oem->ie : Configure device for DPS provisioning
+oem->ie : Configure deployment for device using local mode configuration for EA, EH and other modules.\nConfigure EH Bridge to send telemetry upstream.
+end
+
+group Device running
+oem -> ie : Start IoT Edge runtime
+ie -> dps : Provision device\nwith DIdC
+dps -> ih : Create device with\nthumbprint based auth
+ih --> dps : Device info
+dps --> ie : Provisioning info\n(IoTHub + deviceId)
+
+ie -> ea ** : Create and start
+ea -> ea : Process deployment
+ea -> ie : Update credentials for\nEdgeAgent and EdgeHub with SAS auth
+ie -> ih : Update credentials for\nEdgeAgent and EdgeHub with SAS auth
+
+ea -> eh ** : Create and start
+ea -> cm ** : Create and start
+
+eh -> ie : Get server cert
+ie -> ie : Generate CSR for server cert
+ie -> dps : CSR for server cert 
+dps --> ie : Cert signed with CA1
+ie --> eh : Server cert
+
+cm -> ie : Get local identity
+ie -> ie : Generate CSR for client cert
+ie -> dps : CSR for client cert
+dps --> ie : Cert signed with CA1
+ie --> cm : Module local identity
+
+cm -> eh : Connect using mutual TLS auth
+cm -> eh : Pub/sub to MQTT Broker using custom topics
+
+eh -> ie : Get IoTHub identity
+ie --> eh : Identity info (IoTHub + deviceId + generation Id + credentials type)
+eh -> ie : Sign token 
+ie --> eh : Token signed with EdgeHub's SAS Key
+eh -> ih : Connect using token and forward telemetry
+end
+@enduml
