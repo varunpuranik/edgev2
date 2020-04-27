@@ -1,5 +1,5 @@
 .PHONY: default
 
 default:
-	rm -f *.svg
-	plantuml -tsvg *.plantuml
+	rm -f img/*.svg
+	plantuml -tsvg -o $$PWD/img/ plantuml/*.plantuml
