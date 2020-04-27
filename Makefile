@@ -1,5 +1,5 @@
 .PHONY: default
 
 default:
-	rm *.png
-	plantuml *.plantuml
+	rm -f *.svg
+	plantuml -tsvg *.plantuml

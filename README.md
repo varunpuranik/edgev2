@@ -68,8 +68,8 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
 
 5. IS performs provisioning.
 
-    ![Provisioning using X.509 device ID cert](provisioning-x509deviceid.png)
-    ![Internals of the TLS client auth](provisioning-x509deviceid-openssl.png)
+    ![Provisioning using X.509 device ID cert](provisioning-x509deviceid.svg)
+    ![Internals of the TLS client auth](provisioning-x509deviceid-openssl.svg)
 
 
 # Modules via module runtime for containers (similar to current iotedged)
@@ -143,7 +143,7 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
 
 6. MR does its work.
 
-    ![MR operation](operation-mr-deviceca.png)
+    ![MR operation](operation-mr-deviceca.svg)
 
 
 # API surface
