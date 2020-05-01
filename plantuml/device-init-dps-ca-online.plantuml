@@ -15,10 +15,10 @@ autonumber
 
 group Initial Setup 
 oem->dps : Register signing CA Cert (CA1)\nfor signing certificates
-oem->oem : Generate device identity cert (DIdC) signed by\nIdentity CA Cert (CA2).
-note over oem: CA1 and CA2 can be same or different in this case\nbecause device does not have the CA cert
+oem->oem : Generate bootstrap cert (DBC) signed by\nIdentity CA Cert (CA2).
+note over oem,ih: CA1 and CA2 can be same or different in this case\nbecause device does not have the CA cert
 oem->dps : Create group enrollment with Idenity CA Certificate (CA2) 
-oem->device : Install DIdC on the device (file system or HSM) 
+oem->device : Install DBC on the device (file system or HSM) 
 end
 
 group Device setup and configuration
@@ -29,10 +29,11 @@ end
 
 group Device running
 oem -> ie : Start IoT Edge runtime
-ie -> dps : Provision device\nwith DIdC
+ie -> ie : Generate CSR for device identity cert (DIdC)
+ie -> dps : Provision device with DBC\n+CSR for DIdC
 dps -> ih : Create device with\nthumbprint based auth
 ih --> dps : Device info
-dps --> ie : Provisioning info\n(IoTHub + deviceId)
+dps --> ie : Provisioning info\n(IoTHub + deviceId + signed DIdC)
 
 ie -> ea ** : Create and start
 ea -> ea : Process deployment
