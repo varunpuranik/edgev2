@@ -7,7 +7,7 @@
     "lib_path" = "/usr/lib/softhsm.so"
     "base_slot" = "pkcs11:slot-id=0?pin-value=1234"
 
-    [keystore.preloaded_key]
+    [keystore.preloaded_keys]
     "device-id" = "pkcs11:slot-id=0;object=device%20id?pin-value=1234"
     ```
 
@@ -17,7 +17,7 @@
     [certstore]
     "homedir_path" = "/var/lib/iotedge/cs"
 
-    [certstore.preloaded_cert]
+    [certstore.preloaded_certs]
     "device-id" = "/var/secrets/device-id.cer"
     ```
 

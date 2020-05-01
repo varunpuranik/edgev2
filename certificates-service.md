@@ -1,38 +1,20 @@
 # API
 
-## Create or Import Certificate
+## Create New Certificate from CSR
 
-`PUT /certificate/{certid}`
+`POST /certificate`
 
-### Request to create certificate
-
-```json
-{
-    "issuername": "string",
-    "csr": "base64-encoded-string"
-}
-```
-
-### Request to import certificate
+### Request
 
 ```json
 {
-    "pem": "string"
+    "certId": "...",
+    "csr": "base64-encoded-string",
+    "issuerName": "string"
 }
 ```
 
-### Response
-```json
-{
-    "pem": "string"
-}
-```
-
----
-
-## Load Certificate
-
-`GET /certificate/{certid}`
+`issuerName` is optional. Certificate will be self-signed if it is not provided and the CSR requests the CA constraint.
 
 ### Response
 
@@ -44,7 +26,43 @@
 
 ---
 
-## Get Certificate List
+## Import Certificate
+
+`PUT /certificate/{certId}`
+
+### Request
+
+```json
+{
+    "pem": "string"
+}
+```
+
+### Response
+
+```json
+{
+    "pem": "string"
+}
+```
+
+---
+
+## Get Existing Certificate
+
+`GET /certificate/{certId}`
+
+### Response
+
+```json
+{
+    "pem": "string"
+}
+```
+
+---
+
+## Get All Certificates
 
 `GET /certificate`
 
@@ -55,7 +73,8 @@
     "certificates": [
         {
             "pem": "string"
-        }
+        },
+        ...
     ]
 }
 ```

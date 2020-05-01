@@ -12,7 +12,7 @@
     "managedBy": "aziot://myhub.net/",
     "auth": {
         "type": "sas",
-        "keyStoreHandle": "string",
+        "keyId": "string"
     }
 }
 ```
@@ -25,16 +25,19 @@
     "managedBy": "aziot://myhub.net/",
     "auth": {
         "type": "x509",
-        "certicateStoreHandle": "string",
+        "keyId": "string",
+        "certId": "string"
     }
 }
 ```
+
+`keyId` and `certId` are used with KS and CS respectively.
 
 ---
 
 ## Trigger IoT device reprovisioning flow
 
-`GET /identities/aziot/device/reprovision`
+`POST /identities/aziot/device/reprovision`
 
 ### Response
 
