@@ -15,9 +15,9 @@ autonumber
 
 group Initial Setup 
 oem->dps : Register signing CA Cert (CA1)\nfor signing certificates
+oem->dps : Register Idenity CA Certificate (CA2)\n and create group enrollment with CA2
 oem->oem : Generate bootstrap cert (DBC) signed by\nIdentity CA Cert (CA2).
-note over oem,ih: CA1 and CA2 can be same or different in this case\nbecause device does not have the CA cert
-oem->dps : Create group enrollment with Idenity CA Certificate (CA2) 
+note over oem,ih: CA1 and CA2 can be same or different in this case\nbecause device does not have the CA cert 
 oem->device : Install DBC on the device (file system or HSM) 
 end
 
